@@ -6,6 +6,13 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useState, useEffect, useRef } from "react"
 import { getMeasurements } from "@/lib/api"
 
+function ratioToPercent(ratio: number): number {
+
+  const min = 0.8
+  const max = 2.0
+  return Math.min(100, Math.max(0, Math.round(((ratio - min) / (max - min)) * 100)))
+}
+
 export function DashboardGeneral() {
   const {
     systemMode,
@@ -13,45 +20,45 @@ export function DashboardGeneral() {
     trafficLights = [],
   } = useTraffic()
 
-  const congestionLabel = getCongestionLabel(currentCongestion)
-  const congestionColor = getCongestionColor(currentCongestion)
+  const safeMode = systemMode ?? "normal"
+
+  const congestionPercent = ratioToPercent(currentCongestion)
+
+  const congestionLabel = getCongestionLabel(congestionPercent)
+  const congestionColor = getCongestionColor(congestionPercent)
   const onlineCount = trafficLights.filter(l => l.status === "online").length
   const offlineCount = trafficLights.filter(l => l.status === "offline").length
 
-const [measurements, setMeasurements] = useState<{ time: string; congestion: number }[]>([])
-const historyRef = useRef<{ time: string; congestion: number }[]>([])
+  const [measurements, setMeasurements] = useState<{ time: string; congestion: number }[]>([])
+  const historyRef = useRef<{ time: string; congestion: number }[]>([])
 
-useEffect(() => {
-  getMeasurements().then(data => {
-    if (data.length > 0) {
-      // Usa los datos reales de MySQL 
-      const mapped = data.slice(-20).map(m => ({
-        time: new Date(m.createdAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }),
-        congestion: Math.round(m.congestionLevel * 100),
-      }))
-      setMeasurements(mapped)
-      historyRef.current = mapped
+  useEffect(() => {
+    getMeasurements().then(data => {
+      if (data.length > 0) {
+        const mapped = data.slice(-20).map(m => ({
+          time: new Date(m.createdAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }),
+          congestion: ratioToPercent(m.congestionLevel),
+        }))
+        setMeasurements(mapped)
+        historyRef.current = mapped
+      }
+    }).catch(() => {})
+  }, [])
+
+  if (congestionPercent > 0) {
+    const now = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+    const last = historyRef.current[historyRef.current.length - 1]
+    if (!last || last.congestion !== congestionPercent) {
+      historyRef.current = [...historyRef.current.slice(-20), { time: now, congestion: congestionPercent }]
+      setMeasurements([...historyRef.current])
     }
-  }).catch(() => {})
-}, [])
-
-// Actualiza con datos en tiempo real del SSE cuando no hay datos históricos
-if (currentCongestion > 0) {
-  const now = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
-  const last = historyRef.current[historyRef.current.length - 1]
-  if (!last || last.congestion !== currentCongestion) {
-    historyRef.current = [...historyRef.current.slice(-20), { time: now, congestion: currentCongestion }]
-    setMeasurements([...historyRef.current])
   }
-}
 
-const chartData = measurements
-
+  const chartData = measurements
   const prevCongestion = chartData.length > 1
     ? chartData[chartData.length - 2].congestion
-    : currentCongestion
-  const trend = currentCongestion - prevCongestion
-
+    : congestionPercent
+  const trend = congestionPercent - prevCongestion
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,7 +67,6 @@ const chartData = measurements
         <p className="text-sm text-muted-foreground mt-1">Monitoreo en tiempo real del sistema de semaforos inteligentes - Carrera 27</p>
       </div>
 
-      
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Modo del Sistema */}
         <Card className="border-border/50 bg-card/50">
@@ -74,16 +80,16 @@ const chartData = measurements
             <div className="flex items-center gap-3">
               <div
                 className="size-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: `${getModeColor(systemMode)}15` }}
+                style={{ backgroundColor: `${getModeColor(safeMode)}15` }}
               >
                 <div
                   className="size-4 rounded-full animate-pulse"
-                  style={{ backgroundColor: getModeColor(systemMode) }}
+                  style={{ backgroundColor: getModeColor(safeMode) }}
                 />
               </div>
               <div>
-                <div className="text-lg font-semibold" style={{ color: getModeColor(systemMode) }}>
-                  {getModeLabel(systemMode)}
+                <div className="text-lg font-semibold" style={{ color: getModeColor(safeMode) }}>
+                  {getModeLabel(safeMode)}
                 </div>
                 <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Estado activo</div>
               </div>
@@ -104,27 +110,18 @@ const chartData = measurements
               <div className="relative size-10">
                 <svg viewBox="0 0 36 36" className="size-10 -rotate-90">
                   <path
-                    d="M18 2.0845
-                      a 15.9155 15.9155 0 0 1 0 31.831
-                      a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    className="text-secondary"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none" stroke="currentColor" strokeWidth="3" className="text-secondary"
                   />
                   <path
-                    d="M18 2.0845
-                      a 15.9155 15.9155 0 0 1 0 31.831
-                      a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke={congestionColor}
-                    strokeWidth="3"
-                    strokeDasharray={`${currentCongestion}, 100`}
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none" stroke={congestionColor} strokeWidth="3"
+                    strokeDasharray={`${congestionPercent}, 100`}
                     className="transition-all duration-700"
                   />
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{ color: congestionColor }}>
-                  {currentCongestion}%
+                  {congestionPercent}%
                 </span>
               </div>
               <div>
@@ -166,16 +163,14 @@ const chartData = measurements
                 <div className="text-[10px] text-muted-foreground">
                   {offlineCount > 0 ? (
                     <span className="text-red-400">{offlineCount} desconectado{offlineCount > 1 ? "s" : ""}</span>
-                  ) : (
-                    "Todos en linea"
-                  )}
+                  ) : "Todos en linea"}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-                
+
       {/* Grafica congestion */}
       <Card className="border-border/50 bg-card/50">
         <CardHeader>
@@ -196,39 +191,18 @@ const chartData = measurements
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis
-                  dataKey="time"
-                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
-                  tickLine={false}
-                />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.1)" }} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.1)" }} tickLine={false} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(15,15,25,0.95)",
-                    borderColor: "rgba(255,255,255,0.1)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: "#fff",
-                  }}
+                  contentStyle={{ backgroundColor: "rgba(15,15,25,0.95)", borderColor: "rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 12, color: "#fff" }}
                   formatter={(value) => [`${value}%`, "Congestion"]}
                 />
                 <ReferenceLine y={40} stroke="#22c55e" strokeDasharray="4 4" strokeOpacity={0.4} />
                 <ReferenceLine y={70} stroke="#eab308" strokeDasharray="4 4" strokeOpacity={0.4} />
-                <Area
-                  type="monotone"
-                  dataKey="congestion"
-                  stroke="#22c55e"
-                  fill="url(#congestionGradient)"
-                  strokeWidth={2}
-                  dot={false}
-                  animationDuration={800}
-                />
+                <Area type="monotone" dataKey="congestion" stroke="#22c55e"
+                  fill="url(#congestionGradient)" strokeWidth={2} dot={false} animationDuration={800} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

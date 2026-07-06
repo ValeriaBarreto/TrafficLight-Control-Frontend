@@ -103,7 +103,12 @@ export function TrafficProvider({ children }: { children: React.ReactNode }) {
       },
       // current-mode
       ({ currentMode }) => {
-        setSystemMode(currentMode as SystemMode)
+        const modeMap: Record<string, SystemMode> = {
+          OFF: "off",
+          NORMAL: "normal",
+          PEAK: "rush_hour",
+        }
+        setSystemMode(modeMap[currentMode] ?? "normal")
       },
       // status-intersection
       ({ status, codeIntersection }) => {
