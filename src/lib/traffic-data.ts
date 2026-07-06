@@ -76,8 +76,8 @@ export function getStatusColor(status: TrafficLightStatus): string {
 
 export function getModeLabel(mode: SystemMode): string {
   switch (mode) {
-    case "off": return "Apagado"
-    case "normal": return "Normal"
+    case "off": return "Normal"
+    case "normal": return "Hora Valle"
     case "rush_hour": return "Hora Pico"
   }
 }

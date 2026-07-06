@@ -127,7 +127,7 @@ export function TrafficProvider({ children }: { children: React.ReactNode }) {
       },
       // route-congestion
       ({ congestionLevel }) => {
-        setCurrentCongestion(Math.round(congestionLevel))
+        setCurrentCongestion(congestionLevel)
       },
     )
   }, [userName, upsertLight])

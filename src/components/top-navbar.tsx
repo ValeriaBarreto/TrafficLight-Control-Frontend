@@ -51,7 +51,7 @@ export function TopNavbar() {
           style={{ backgroundColor: getCongestionColor(currentCongestion) }}
         />
         <span className="text-xs text-muted-foreground">
-          Congestion: <span className="text-foreground font-medium">{currentCongestion}%</span>
+          Congestion: <span className="text-foreground font-medium">{Math.min(100, Math.max(0, Math.round((currentCongestion - 1) * 100)))}%</span>
         </span>
       </div>
 

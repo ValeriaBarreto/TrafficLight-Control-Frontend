@@ -138,3 +138,49 @@ export async function getMeasurements() {
     codeResponse: string
   }[]>
 }
+export async function getUsers() {
+  const res = await fetch(`${BASE_URL}/auth/users`)
+  if (!res.ok) throw new Error("Error al obtener usuarios")
+  return res.json() as Promise<{
+    id: number
+    name: string
+    lastName: string
+    email: string
+    phone: string
+    role: string
+  }[]>
+}
+
+export async function registerUser(data: {
+  name: string
+  lastName: string
+  email: string
+  password: string
+  phone: string
+  role: string
+}) {
+  const res = await fetch(`${BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error("Error al registrar usuario")
+  return res.json()
+}
+
+export async function deleteUser(id: number) {
+  const res = await fetch(`${BASE_URL}/auth/users/${id}`, {
+    method: "DELETE",
+  })
+  if (!res.ok) throw new Error("Error al eliminar usuario")
+}
+
+export async function updateUserRole(id: number, role: string) {
+  const res = await fetch(`${BASE_URL}/auth/users/${id}/role`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(role),
+  })
+  if (!res.ok) throw new Error("Error al actualizar rol")
+  return res.json()
+}
