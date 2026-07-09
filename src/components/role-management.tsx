@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { useTraffic } from "@/lib/traffic-context"
-import { getUsers, registerUser, deleteUser, updateUserRole } from "@/lib/api"
+import { getUsers, registerUser, deleteUser, updateUserRole, getTransactions } from "@/lib/api"
 import type { UserRole } from "@/lib/traffic-data"
 import { useState, useEffect } from "react"
 
@@ -28,6 +28,14 @@ interface User {
   email: string
   phone: string
   role: string
+}
+
+interface DbTransaction {
+  id: number
+  createdAt: string
+  returnDate: string | null
+  codeIntersection: string
+  description: string
 }
 
 const roles: RoleInfo[] = [
@@ -58,7 +66,7 @@ const roles: RoleInfo[] = [
 ]
 
 export function RoleManagement() {
-  const { userRole, transactions } = useTraffic()
+  const { userRole } = useTraffic()
   const isAdmin = userRole === "admin"
   const currentRoleInfo = roles.find(r => r.role === userRole)!
 
@@ -68,6 +76,11 @@ export function RoleManagement() {
   const [form, setForm] = useState({
     name: "", lastName: "", email: "", password: "", phone: "", role: "OPERATOR"
   })
+  const [dbTransactions, setDbTransactions] = useState<DbTransaction[]>([])
+
+  useEffect(() => {
+    getTransactions().then(setDbTransactions).catch(console.error)
+  }, [])
 
   const loadUsers = async () => {
     setLoadingUsers(true)
@@ -186,7 +199,7 @@ export function RoleManagement() {
         })}
       </div>
 
-      {/* Gestion de Usuarios */}
+      {/* Gestion de Usuarios — solo admin */}
       {isAdmin && (
         <Card className="border-border/50 bg-card/50">
           <CardHeader>
@@ -325,7 +338,7 @@ export function RoleManagement() {
             <History className="size-4 text-muted-foreground" />
             Historial de Transacciones
           </CardTitle>
-          <CardDescription className="text-xs">Registro de todas las acciones y cambios del sistema</CardDescription>
+          <CardDescription className="text-xs">Registro de activaciones del sistema de semaforos</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[280px]">
@@ -334,28 +347,45 @@ export function RoleManagement() {
                 <thead>
                   <tr className="border-b border-border/30 bg-secondary/20">
                     <th className="px-3 py-2 text-left text-muted-foreground font-medium">ID</th>
-                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Hora Inicio</th>
-                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Hora Fin</th>
-                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Semaforo</th>
-                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Accion</th>
-                    <th className="px-3 py-2 text-left text-muted-foreground font-medium hidden md:table-cell">Detalles</th>
+                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Fecha Inicio</th>
+                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Fecha Fin</th>
+                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">Interseccion</th>
+                    <th className="px-3 py-2 text-left text-muted-foreground font-medium hidden md:table-cell">Descripcion</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map(tx => (
-                    <tr key={tx.id} className="border-b border-border/15 last:border-0 hover:bg-secondary/10">
-                      <td className="px-3 py-2 font-mono text-muted-foreground">{tx.id}</td>
-                      <td className="px-3 py-2 font-mono text-foreground">
-                        {new Date(tx.timestamp).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                  {dbTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-6 text-center text-xs text-muted-foreground">
+                        Sin transacciones registradas
                       </td>
-                      <td className="px-3 py-2">
-                        <Badge variant="outline" className="text-[10px] h-5 border-border/30">{tx.trafficLightId}</Badge>
-                      </td>
-                      <td className="px-3 py-2 text-foreground">{tx.action}</td>
-                      <td className="px-3 py-2 text-muted-foreground hidden md:table-cell max-w-[200px] truncate">{tx.details}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{tx.user}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    [...dbTransactions].reverse().map(tx => (
+                      <tr key={tx.id} className="border-b border-border/15 last:border-0 hover:bg-secondary/10">
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{tx.id}</td>
+                        <td className="px-3 py-2 font-mono text-foreground">
+                          {new Date(tx.createdAt).toLocaleString("es-CO", {
+                            day: "2-digit", month: "2-digit", year: "2-digit",
+                            hour: "2-digit", minute: "2-digit"
+                          })}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-foreground">
+                          {tx.returnDate
+                            ? new Date(tx.returnDate).toLocaleString("es-CO", {
+                                day: "2-digit", month: "2-digit", year: "2-digit",
+                                hour: "2-digit", minute: "2-digit"
+                              })
+                            : <span className="text-muted-foreground/50">—</span>
+                          }
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className="text-[10px] h-5 border-border/30">{tx.codeIntersection}</Badge>
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground hidden md:table-cell max-w-[200px] truncate">{tx.description}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

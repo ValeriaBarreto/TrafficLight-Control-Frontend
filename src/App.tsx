@@ -40,7 +40,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/dashboard" element={<PrivateRoute><AppLayout><DashboardGeneral /></AppLayout></PrivateRoute>} />
-      <Route path="/semaforos" element={<PrivateRoute><AppLayout><TrafficLightGrid /></AppLayout></PrivateRoute>} />
+      <Route path="/rutas" element={<PrivateRoute><AppLayout><TrafficLightGrid /></AppLayout></PrivateRoute>} />
       <Route path="/modos" element={<PrivateRoute><AppLayout><OperationModes /></AppLayout></PrivateRoute>} />
       <Route path="/roles" element={<PrivateRoute><AppLayout><RoleManagement /></AppLayout></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />

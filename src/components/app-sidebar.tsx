@@ -23,7 +23,7 @@ import { getModeColor, getModeLabel } from "@/lib/traffic-data"
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/semaforos", label: "Semaforos", icon: TrafficCone },
+  { path: "/rutas", label: "Rutas", icon: TrafficCone },
   { path: "/modos", label: "Modos de Operacion", icon: Settings2 },
   { path: "/roles", label: "Gestion de Roles", icon: Shield },
 ]

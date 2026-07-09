@@ -184,3 +184,78 @@ export async function updateUserRole(id: number, role: string) {
   if (!res.ok) throw new Error("Error al actualizar rol")
   return res.json()
 }
+
+export async function getRoutes() {
+  const res = await fetch(`${BASE_URL}/config/routes`)
+  if (!res.ok) throw new Error("Error al obtener rutas")
+  return res.json() as Promise<{
+    id: number
+    name: string
+    coordinate: { latitude: number; longitude: number }
+  }[]>
+}
+
+export async function getIntersectionsByRoute(routeId: number) {
+  const res = await fetch(`${BASE_URL}/config/routes/${routeId}/intersections`)
+  if (!res.ok) throw new Error("Error al obtener intersecciones")
+  return res.json() as Promise<{
+    code: string
+    location: string
+    latitude: number
+    longitude: number
+  }[]>
+}
+
+export async function createRoute(data: {
+  name: string
+  coordinate: { latitude: number; longitude: number }
+}) {
+  const res = await fetch(`${BASE_URL}/config/create/route`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error("Error al crear ruta")
+  return res.json()
+}
+
+export async function createIntersection(data: {
+  location: string
+  code: string
+  position: number
+  routeId: number
+  coordinate: { latitude: number; longitude: number }
+}) {
+  const res = await fetch(`${BASE_URL}/config/create/intersection`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify([data]),
+  })
+  if (!res.ok) throw new Error("Error al crear interseccion")
+  return res.json()
+}
+export async function deleteRoute(id: number) {
+  const res = await fetch(`${BASE_URL}/config/routes/${id}`, {
+    method: "DELETE",
+  })
+  if (!res.ok) throw new Error("Error al eliminar ruta")
+}
+
+export async function deleteIntersection(code: string) {
+  const res = await fetch(`${BASE_URL}/config/intersections/${code}`, {
+    method: "DELETE",
+  })
+  if (!res.ok) throw new Error("Error al eliminar interseccion")
+}
+
+export async function getTransactions() {
+  const res = await fetch(`${BASE_URL}/transactions`)
+  if (!res.ok) throw new Error("Error al obtener transacciones")
+  return res.json() as Promise<{
+    id: number
+    createdAt: string
+    returnDate: string | null
+    codeIntersection: string
+    description: string
+  }[]>
+}
