@@ -1,34 +1,72 @@
 import { Activity, Gauge, MapPin, TrendingUp, TrendingDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTraffic } from "@/lib/traffic-context"
 import { getModeLabel, getModeColor, getCongestionColor, getCongestionLabel } from "@/lib/traffic-data"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
 import { useState, useEffect, useRef } from "react"
-import { getMeasurements } from "@/lib/api"
+import { getMeasurements, getRoutes, getIntersectionsByRoute } from "@/lib/api"
 
 function ratioToPercent(ratio: number): number {
-
-  const min = 0.8
+  const min = 1.0
   const max = 2.0
   return Math.min(100, Math.max(0, Math.round(((ratio - min) / (max - min)) * 100)))
+}
+
+interface Route {
+  id: number
+  name: string
+  coordinate: { latitude: number; longitude: number }
 }
 
 export function DashboardGeneral() {
   const {
     systemMode,
     currentCongestion,
+    congestionByRoute,
     trafficLights = [],
   } = useTraffic()
 
   const safeMode = systemMode ?? "normal"
 
-  const congestionPercent = ratioToPercent(currentCongestion)
+  const [routes, setRoutes] = useState<Route[]>([])
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null)
+  const [routeIntersectionCodes, setRouteIntersectionCodes] = useState<string[]>([])
 
+  // Carga rutas al montar
+  useEffect(() => {
+    getRoutes().then(data => {
+      setRoutes(data)
+      if (data.length > 0) {
+        setSelectedRouteId(data[0].id)
+      }
+    }).catch(console.error)
+  }, [])
+
+  // Carga intersecciones de la ruta seleccionada
+  useEffect(() => {
+    if (selectedRouteId === null) return
+    getIntersectionsByRoute(selectedRouteId).then(data => {
+      setRouteIntersectionCodes(data.map(i => i.code))
+    }).catch(console.error)
+  }, [selectedRouteId])
+
+  // Congestion de la ruta seleccionada
+  const routeCongestionRaw = selectedRouteId !== null
+    ? (congestionByRoute[selectedRouteId] ?? currentCongestion)
+    : currentCongestion
+  const congestionPercent = ratioToPercent(routeCongestionRaw)
   const congestionLabel = getCongestionLabel(congestionPercent)
   const congestionColor = getCongestionColor(congestionPercent)
-  const onlineCount = trafficLights.filter(l => l.status === "online").length
-  const offlineCount = trafficLights.filter(l => l.status === "offline").length
 
+  // Semaforos filtrados por ruta
+  const routeLights = selectedRouteId !== null
+    ? trafficLights.filter(l => routeIntersectionCodes.includes(l.id))
+    : trafficLights
+  const onlineCount = routeLights.filter(l => l.status === "online").length
+  const offlineCount = routeLights.filter(l => l.status === "offline").length
+
+  // Historial de congestion
   const [measurements, setMeasurements] = useState<{ time: string; congestion: number }[]>([])
   const historyRef = useRef<{ time: string; congestion: number }[]>([])
 
@@ -45,14 +83,16 @@ export function DashboardGeneral() {
     }).catch(() => {})
   }, [])
 
-  if (congestionPercent > 0) {
-    const now = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
-    const last = historyRef.current[historyRef.current.length - 1]
-    if (!last || last.congestion !== congestionPercent) {
-      historyRef.current = [...historyRef.current.slice(-20), { time: now, congestion: congestionPercent }]
-      setMeasurements([...historyRef.current])
+ useEffect(() => {
+    if (congestionPercent > 0) {
+      const now = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+      const last = historyRef.current[historyRef.current.length - 1]
+      if (!last || last.congestion !== congestionPercent) {
+        historyRef.current = [...historyRef.current.slice(-20), { time: now, congestion: congestionPercent }]
+        setMeasurements([...historyRef.current])
+      }
     }
-  }
+  }, [congestionPercent])
 
   const chartData = measurements
   const prevCongestion = chartData.length > 1
@@ -60,13 +100,37 @@ export function DashboardGeneral() {
     : congestionPercent
   const trend = congestionPercent - prevCongestion
 
+  const selectedRoute = routes.find(r => r.id === selectedRouteId)
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">Dashboard General</h1>
-        <p className="text-sm text-muted-foreground mt-1">Monitoreo en tiempo real del sistema de semaforos inteligentes - Carrera 27</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-balance">Dashboard General</h1>
+          <p className="text-sm text-muted-foreground mt-1">Monitoreo en tiempo real del sistema de semaforos inteligentes</p>
+        </div>
+        {/* Selector de ruta */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs text-muted-foreground">Ruta:</span>
+          <Select
+            value={selectedRouteId?.toString() ?? ""}
+            onValueChange={v => setSelectedRouteId(Number(v))}
+          >
+            <SelectTrigger className="w-48 h-8 text-xs">
+              <SelectValue placeholder="Seleccionar ruta" />
+            </SelectTrigger>
+            <SelectContent>
+              {routes.map(r => (
+                <SelectItem key={r.id} value={r.id.toString()}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
+      {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Modo del Sistema */}
         <Card className="border-border/50 bg-card/50">
@@ -102,7 +166,7 @@ export function DashboardGeneral() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5 text-xs">
               <Gauge className="size-3.5" />
-              Congestion Carrera 27
+              Congestion {selectedRoute?.name ?? ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -158,7 +222,7 @@ export function DashboardGeneral() {
               </div>
               <div>
                 <div className="text-lg font-semibold text-foreground">
-                  {onlineCount}/{trafficLights.length}
+                  {onlineCount}/{routeLights.length}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
                   {offlineCount > 0 ? (
@@ -174,7 +238,9 @@ export function DashboardGeneral() {
       {/* Grafica congestion */}
       <Card className="border-border/50 bg-card/50">
         <CardHeader>
-          <CardTitle className="text-sm">Historico de Congestion - Carrera 27</CardTitle>
+          <CardTitle className="text-sm">
+            Historico de Congestion — {selectedRoute?.name ?? "Ruta"}
+          </CardTitle>
           <CardDescription className="text-xs">
             Nivel de congestion en tiempo real (fuente: Google Maps API)
           </CardDescription>

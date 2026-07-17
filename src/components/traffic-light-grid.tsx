@@ -88,7 +88,7 @@ function TrafficLightDetail({ light, onClose }: { light: TrafficLight; onClose: 
               <div className="text-xs font-normal text-muted-foreground">{light.location}</div>
             </div>
           </SheetTitle>
-          <SheetDescription className="sr-only">Detalles del semaforo {light.id}</SheetDescription>
+          <SheetDescription className="sr-only">Detalles de la interseccion {light.id}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea className="h-[calc(100vh-120px)] pr-4">
@@ -296,8 +296,8 @@ function AddIntersectionDialog({ open, onClose, routeId, onCreated }: {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Agregar Semaforo</DialogTitle>
-          <DialogDescription>Ingresa los datos del nuevo semaforo.</DialogDescription>
+          <DialogTitle>Agregar Interseccion</DialogTitle>
+          <DialogDescription>Ingresa los datos de la nueva interseccion.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 py-4">
           <div className="grid grid-cols-2 gap-3">
@@ -333,7 +333,7 @@ function AddIntersectionDialog({ open, onClose, routeId, onCreated }: {
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleCreate} disabled={loading || !form.location || !form.code || !form.position || !form.latitude || !form.longitude}>
-            {loading ? "Creando..." : "Agregar Semaforo"}
+            {loading ? "Creando..." : "Agregar Interseccion"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -481,26 +481,26 @@ export function TrafficLightGrid() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-foreground">{selectedRoute.name}</p>
                   <Badge variant="outline" className="text-[10px] h-5 border-border/30">
-                    {routeLights.length} semaforos
+                    {routeLights.length} intersecciones
                   </Badge>
                 </div>
                 <Button size="sm" className="gap-2" onClick={() => setAddIntersectionOpen(true)}>
                   <Plus className="size-4" />
-                  Agregar Semaforo
+                  Agregar Interseccion
                 </Button>
               </div>
 
               {loadingIntersections ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Cargando semaforos...</p>
+                  <p className="text-sm text-muted-foreground">Cargando intersecciones...</p>
                 </div>
               ) : routeLights.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/40 p-8">
                   <TrafficLightVisual color="red" />
-                  <p className="text-sm text-muted-foreground">Sin semaforos en esta ruta</p>
+                  <p className="text-sm text-muted-foreground">Sin intersecciones en esta ruta</p>
                   <Button size="sm" variant="outline" className="gap-2" onClick={() => setAddIntersectionOpen(true)}>
                     <Plus className="size-4" />
-                    Agregar primer semaforo
+                    Agregar primera interseccion
                   </Button>
                 </div>
               ) : (
@@ -535,7 +535,7 @@ export function TrafficLightGrid() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/40">
               <Route className="size-10 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">Selecciona una ruta para ver sus semaforos</p>
+              <p className="text-sm text-muted-foreground">Selecciona una ruta para ver sus intersecciones</p>
             </div>
           )}
         </div>

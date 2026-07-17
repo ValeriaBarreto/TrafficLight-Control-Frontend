@@ -42,10 +42,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold text-foreground tracking-tight">
-              TrafficIQ
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              Control Center
+              Traffic Control
             </span>
           </div>
         </div>

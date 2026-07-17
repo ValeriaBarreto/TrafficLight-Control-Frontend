@@ -26,7 +26,9 @@ interface TrafficContextType {
   setSelectedLight: (light: TrafficLight | null) => void
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
+  congestionByRoute: Record<number, number>
 }
+
 
 const TrafficContext = createContext<TrafficContextType | null>(null)
 
@@ -47,6 +49,7 @@ export function TrafficProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [selectedLight, setSelectedLight] = useState<TrafficLight | null>(null)
   const sseRef = useRef<EventSource | null>(null)
+  const [congestionByRoute, setCongestionByRoute] = useState<Record<number, number>>({})
 
   const upsertLight = useCallback((id: string, patch: Partial<TrafficLight>) => {
     setTrafficLights(prev => {
@@ -126,8 +129,9 @@ export function TrafficProvider({ children }: { children: React.ReactNode }) {
         }])
       },
       // route-congestion
-      ({ congestionLevel }) => {
+      ({ congestionLevel, routeId }) => {
         setCurrentCongestion(congestionLevel)
+        setCongestionByRoute(prev => ({ ...prev, [routeId]: congestionLevel }))
       },
     )
   }, [userName, upsertLight])
@@ -229,6 +233,7 @@ const addScheduleEntry = useCallback(async (entry: Omit<ScheduleEntry, "id">) =>
 
   return (
     <TrafficContext.Provider value={{
+      congestionByRoute,
       trafficLights,
       systemMode,
       currentCongestion,

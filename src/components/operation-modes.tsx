@@ -14,8 +14,8 @@ const modes: { mode: SystemMode; icon: React.ElementType; description: string; d
   {
     mode: "off",
     icon: Power,
-    description: "Semaforos en modo intermitente. Sin sincronizacion activa.",
-    details: ["Intermitente en amarillo", "Sin control de congestion", "Sin sincronizacion"],
+    description: "Semaforos en funcionamiento habitual sin intervencion del software de gestion de trafico.",
+    details: [ "Sin control de congestion", "Sin sincronizacion"],
   },
   {
     mode: "normal",
