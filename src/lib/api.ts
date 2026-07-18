@@ -7,7 +7,8 @@ export async function apiLogin(email: string, password: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   })
-  if (!res.ok) throw new Error("Credenciales incorrectas")
+  if (!res.ok) throw new Error("Credenciales incorrectas");
+  console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
   return res.json() as Promise<{ name: string; email: string; role: string }>
 }
 
