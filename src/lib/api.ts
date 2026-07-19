@@ -1,14 +1,14 @@
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080"
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8091"
 
 export async function apiLogin(email: string, password: string) {
+  console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   })
   if (!res.ok) throw new Error("Credenciales incorrectas");
-  console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
   return res.json() as Promise<{ name: string; email: string; role: string }>
 }
 
@@ -27,23 +27,28 @@ export function createSseConnection(
 ) {
   const es = new EventSource(`${BASE_URL}/stream/transactions`)
 
-  es.addEventListener("color-traffic", (e) => {
+  es.addEventListener("traffic-light-color", (e) => {
+    console.log("Evento color: " + e.data);
     onColorTraffic(JSON.parse(e.data))
   })
 
   es.addEventListener("intersection-congestion", (e) => {
+    console.log("Evento congestion: " + e.data);
     onCongestion(JSON.parse(e.data))
   })
 
   es.addEventListener("current-mode", (e) => {
+    console.log("Evento modo: " + e.data);
     onMode(JSON.parse(e.data))
   })
 
-  es.addEventListener("status-intersection", (e) => {
+  es.addEventListener("intersection-status", (e) => {
+    console.log("Evento status: " + e.data);
     onStatus(JSON.parse(e.data))
   })
 
   es.addEventListener("route-congestion", (e) => {
+    console.log("Evento congestion global: " + e.data);
     onRouteCongestion(JSON.parse(e.data))
   })
 
